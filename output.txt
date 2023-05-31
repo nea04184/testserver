@@ -20,4 +20,4 @@
     ├── hashing.py
     └── session_manager.py
 
-7 directories, 13 files
+7 directories, 13 file
