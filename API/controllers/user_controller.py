@@ -91,4 +91,3 @@ async def get_users(current_user: str = Depends(get_current_session)):
 
     users = await user_dao.get_users()
     return users
-
