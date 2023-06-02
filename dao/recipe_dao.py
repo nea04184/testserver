@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from pymongo import ReturnDocument
 from utils.config import get_settings
 from utils.db_manager import MongoDBManager
-from models.recipe import RecipeBase, RecipeView, RecipeLike, RecipeCreate
+from models.recipe_models import RecipeBase, RecipeView, RecipeLike, RecipeCreate
 
 settings = get_settings()
 
@@ -50,6 +50,13 @@ class RecipeDao:
     async def delete_one_recipe(self, recipe_id: str):
         result = await self.collection.delete_one({"recipe_id": recipe_id})
         if result.deleted_count == 1:
+            return 1  # 문서가 성공적으로 삭제되었을 경우
+        else:
+            return 0  # 문서 삭제 실패
+
+    async def delete_all_recipe(self):
+        result = await self.collection.delete_many({})
+        if result.deleted_count != 0:
             return 1  # 문서가 성공적으로 삭제되었을 경우
         else:
             return 0  # 문서 삭제 실패
