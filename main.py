@@ -20,8 +20,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,  # 실제 서비스에서는 허용할 도메인을 명시적으로 설정하는 것이 좋습니다.
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=origins,
+    allow_headers=origins,
 )
 
 app.include_router(api_router, prefix="/api")
