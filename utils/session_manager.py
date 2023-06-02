@@ -21,6 +21,8 @@ class SessionManager:
         return session_id
 
     def get_session(self, session_id: str, expiration: int = 3600):
+        if session_id is None:
+            raise ValueError("Session ID cannot be None")
         data = r.get(session_id)
         if data is None:
             raise HTTPException(status_code=401, detail="Invalid session id")
