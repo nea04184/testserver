@@ -69,7 +69,7 @@ async def login(user: LoginRequest, response: Response):
     result = await user_service.login(user.user_id, user.password)
     if result:
         response.set_cookie(
-            key="session_id", value=result["session_id"], secure=None, httponly=True, samesite="None")
+            key="session_id", value=result["session_id"], secure="None", httponly=""True", samesite="None")
         return LoginResponse(message="로그인에 성공했습니다!", session_id=result["session_id"])
     raise HTTPException(status_code=400, detail="로그인에 실패했습니다.")
 
