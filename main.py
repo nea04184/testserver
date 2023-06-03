@@ -22,7 +22,7 @@ app.add_middleware(
     allow_origins=origins,  # 실제 서비스에서는 허용할 도메인을 명시적으로 설정하는 것이 좋습니다.
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["http://localhost:3000"],
 )
 
 app.include_router(api_router, prefix="/api")
