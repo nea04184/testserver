@@ -32,10 +32,22 @@ class SessionManager:
     def delete_session(self, session_id: str):
         r.delete(session_id)
 
+    def create_verification_code(self, email: str):
+        verification_code = str(uuid.uuid4())
+        r.set(verification_code, email, ex=86400)
+        return verification_code
 
-def get_current_session(session: Session = Depends()) -> str:
+    def verify_email(self, code: str):
+        email = r.get(code)
+        if email is None:
+            return False
+        r.delete(code)
+        return email
+
+
+def get_current_session(session: str = Header(...)) -> str:
     session_manager = SessionManager()
-    current_user = session_manager.get_session(session.id)
+    current_user = session_manager.get_session(session)
     if current_user is None:
         raise HTTPException(
             status_code=401,
@@ -57,3 +69,11 @@ async def get_current_user(session: Session = Depends(), session_manager: Sessio
             detail="Invalid session ID",
         )
     return user_id
+
+
+async def verify_email(code: str, session_manager: SessionManager = Depends(SessionManager)):
+    verification_result = session_manager.verify_email(code)
+    if not verification_result:
+        raise HTTPException(
+            status_code=400, detail="Invalid verification code")
+    return {"message": "Email verification successful"}
