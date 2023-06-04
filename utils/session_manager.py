@@ -47,7 +47,6 @@ class SessionManager:
 
 def get_current_session(request: Request) -> str:
     session_id = request.cookies.get("session-id")
-    print(request.cookies.get("session-id"))
     session_manager = SessionManager()
     current_user = session_manager.get_session(session_id)
     print(current_user)

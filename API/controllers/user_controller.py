@@ -84,7 +84,6 @@ async def logout(current_user: str = Depends(get_current_session)):
 
 @router.get("/me", response_model=UserOut, dependencies=[Depends(get_current_session)], responses=common_responses)
 async def get_user(current_user: str = Depends(get_current_session)):
-    print(current_user)
     user_in_db = await user_dao.get_user_by_id(current_user)
     if not user_in_db:
         raise HTTPException(status_code=404, detail="User not found")
