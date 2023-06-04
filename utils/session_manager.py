@@ -16,21 +16,21 @@ class Session(BaseModel):
 
 class SessionManager:
     def create_session(self, data: str):
-        sessionId = str(uuid.uuid4())
-        redis_client.set(sessionId, data)
-        return sessionId
+        session_id = str(uuid.uuid4())
+        redis_client.set(session_id, data)
+        return session_id
 
-    def get_session(self, sessionId: str, expiration: int = 3600):
-        if sessionId is None:
+    def get_session(self, session_id: str, expiration: int = 3600):
+        if session_id is None:
             raise ValueError("Session ID cannot be None")
-        data = redis_client.get(sessionId)
+        data = redis_client.get(session_id)
         if data is None:
             raise HTTPException(status_code=401, detail="Invalid session id")
-        redis_client.expire(sessionId, expiration)
+        redis_client.expire(session_id, expiration)
         return data
 
-    def delete_session(self, sessionId: str):
-        redis_client.delete(sessionId)
+    def delete_session(self, session_id: str):
+        redis_client.delete(session_id)
 
     def create_verification_code(self, email: str):
         verification_code = str(uuid.uuid4())
@@ -45,9 +45,9 @@ class SessionManager:
         return email
 
 
-def get_current_session(sessionId: str = Header(...)) -> str:
+def get_current_session(session_id: str = Header(...)) -> str:
     session_manager = SessionManager()
-    current_user = session_manager.get_session(sessionId)
+    current_user = session_manager.get_session(session_id)
     if current_user is None:
         raise HTTPException(
             status_code=401,
