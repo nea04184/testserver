@@ -46,8 +46,10 @@ class SessionManager:
 
 
 def get_current_session(session_id: str = Header(...)) -> str:
+    print(session_id)
     session_manager = SessionManager()
     current_user = session_manager.get_session(session_id)
+    print(current_user)
     if current_user is None:
         raise HTTPException(
             status_code=401,
