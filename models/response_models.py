@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class LoginResponse(BaseModel):
     message: str
-    session_id: str
+    sessionId: str
 
 
 class LoginRequest(BaseModel):
@@ -12,11 +12,11 @@ class LoginRequest(BaseModel):
 
 
 class DeleteRequest(LoginRequest):
-    session_id: str
+    sessionId: str
 
 
 class LogoutRequest(BaseModel):
-    session_id: str
+    sessionId: str
 
 
 class MessageResponse(BaseModel):

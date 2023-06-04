@@ -57,7 +57,7 @@ async def update_user(user: UserUpdate, current_user: str = Depends(get_current_
 @router.delete("/", response_model=MessageResponse, dependencies=[Depends(get_current_session)], responses=common_responses)
 async def delete_user(user: DeleteRequest, current_user: str = Depends(get_current_session)):
     check_user_permissions(user.user_id, current_user)
-    result = await user_service.delete_user(user.user_id, user.password, str(user.session_id))
+    result = await user_service.delete_user(user.user_id, user.password, str(user.sessionId))
     if not result:
         raise HTTPException(status_code=400, detail="사용자 탈퇴에 실패하였습니다.")
 
@@ -69,8 +69,8 @@ async def login(user: LoginRequest, response: Response):
     result = await user_service.login(user.user_id, user.password)
     if result:
         response.set_cookie(
-            key="sessionId", value=result["session_id"], secure=None, httponly=True, samesite="None")
-        return LoginResponse(message="로그인에 성공했습니다!", sessionId=result["session_id"])
+            key="sessionId", value=result["sessionId"], secure=None, httponly=True, samesite="None")
+        return LoginResponse(message="로그인에 성공했습니다!", sessionId=result["sessionId"])
     raise HTTPException(status_code=400, detail="로그인에 실패했습니다.")
 
 
