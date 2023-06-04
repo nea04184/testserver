@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status, Header
+from fastapi import Depends, HTTPException, status, Header, Request
 from pydantic import BaseModel
 from typing import Optional
 import uuid
@@ -45,8 +45,9 @@ class SessionManager:
         return email
 
 
-def get_current_session(session_id: str = Header(...)) -> str:
-    print(session_id)
+def get_current_session(request: Request) -> str:
+    session_id = request.cookies.get("session-id")
+    print(request.cookies.get("session-id"))
     session_manager = SessionManager()
     current_user = session_manager.get_session(session_id)
     print(current_user)
