@@ -96,7 +96,9 @@ class UserService:
         session_id = self.session_manager.create_session(user.user_id)
         return {"session_id": session_id}
 
-    async def logout(self, session_id: str):
-        self.session_manager.delete_session(session_id)
-        self.response.delete_cookie(key="session-id")
-        return {"detail": "성공적으로 로그아웃되었니다."}
+    async def logout(self, session_id: str, response: Response):
+        response.delete_cookie(key="session_id")
+        session = await SessionManager.delete_session(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        return {"detail": "성공적으로 로그아웃되었습니다."}
