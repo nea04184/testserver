@@ -29,8 +29,8 @@ class SessionManager:
         redis_client.expire(session_id, expiration)
         return data
 
-    def delete_session(self, session_id: str):
-        redis_client.delete(session_id)
+    def delete_session(self, session_id: str, expiration: int = 0):
+        redis_client.delete(session_id, expiration)
 
     def create_verification_code(self, email: str):
         verification_code = str(uuid.uuid4())
