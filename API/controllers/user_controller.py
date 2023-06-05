@@ -42,7 +42,7 @@ async def update_user(user: UserUpdate, current_user: str = Depends(get_current_
     check_user_permissions(user.user_id, current_user)
 
     user_in_db = UserUpdate(**user.dict(), hashed_password='')
-    updated = await user_service.update_user(user_in_db)
+    updated = await user_service.update_user(user_in_db, current_user)
     if not updated:
         raise HTTPException(status_code=400, detail="사용자 정보 업데이트에 실패하였습니다.")
     updated_user = await user_dao.get_user_by_id(user.user_id)
@@ -109,6 +109,7 @@ async def get_users(
         raise HTTPException(status_code=403, detail="권한이 없습니다.")
 
     users = await user_dao.get_users()
+    print(users)
 
     # 페이지네이션 로직
     total_items = len(users)
