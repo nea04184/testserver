@@ -27,7 +27,7 @@ class UserService:
         existing_user = await self.user_dao.get_user_by_id(user.user_id)
         if existing_user:
             raise HTTPException(
-                status_code=404, detail=f"사용자 아이디 '{user.user_id}'은 사용할 수 없습니다.")
+                status_code=404, detail=f"아이디 '{user.user_id}'은 사용할 수 없습니다.")
 
         exiting_email = await self.user_dao.get_user_by_email(user.email)
         if exiting_email:
