@@ -2,7 +2,7 @@ from enum import Enum, IntEnum
 from pydantic import BaseModel, Field
 from typing import List
 from nanoid import generate
-
+from datetime import datetime
 
 class Category(str, Enum):
     korean = "korean"
@@ -51,8 +51,11 @@ class RecipeBase(BaseModel):
 class RecipeCreate(RecipeBase):
     recipe_id: str = Field(default_factory=lambda: generate())
     recipe_view: int = Field(default=0)
-    recipe_like: int = Field(default=0)
     user_id: str
+    user_nickname: str = Field(default='test')
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    recipe_like: int = Field(default=0)
+
 
 
 class RecipeView(RecipeBase):
