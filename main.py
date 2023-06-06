@@ -9,8 +9,8 @@ origins = [
     "http://localhost:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "*",
     "https://matissue.onrender.com",
-    "https://testserver-h4i7.onrender.com"
     # 필요한 출처를 추가하십시오.
 ]
 
