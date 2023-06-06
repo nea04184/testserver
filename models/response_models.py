@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List
 
 
 class LoginResponse(BaseModel):
@@ -11,10 +12,6 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class DeleteRequest(LoginRequest):
-    session_id: str
-
-
 class LogoutRequest(BaseModel):
     session_id: str
 
@@ -25,3 +22,7 @@ class MessageResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str
+
+
+class FollowsResponse(BaseModel):
+    follows: List[str]

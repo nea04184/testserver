@@ -23,23 +23,14 @@ class UserService:
         self.session_manager = SessionManager()
         self.response = Response()
 
-    async def create_user(self, user: UserIn):
-        existing_user = await self.user_dao.get_user_by_id(user.user_id)
-        if existing_user:
-            raise HTTPException(
-                status_code=404, detail=f"아이디 '{user.user_id}'은 사용할 수 없습니다.")
-
-        exiting_email = await self.user_dao.get_user_by_email(user.email)
-        if exiting_email:
-            raise HTTPException(
-                status_code=404, detail=f"사용자 이메일 '{user.email}'은 사용할 수 없습니다.")
-
+    async def create_user(cls, user: UserIn):
+        hashed_password = await Hasher.get_hashed_password(user.password)
         user_in_db = UserInDB(
             **user.dict(exclude={'password'}),
-            hashed_password=Hasher.get_hashed_password(user.password),
+            hashed_password=hashed_password,
             created_at=datetime.now()
         )
-        return await self.user_dao.create_user_in_db(user_in_db)
+        return await cls.user_dao.create_user_in_db(user_in_db)
 
     async def delete_user(self, user_id: str, password: str, session_id: str):
         user = await self.user_dao.get_user_by_id(user_id)
@@ -65,11 +56,19 @@ class UserService:
             raise HTTPException(
                 status_code=400, detail=f"사용자 이메일 '{user.email}'은 사용할 수 없습니다.")
 
-        user_in_db = UserInDB(
-            **user.dict(exclude={'password'}),
-            hashed_password=Hasher.get_hashed_password(
-                user.password) if user.password else existing_user.hashed_password,
-            created_at=datetime.now())
+        hashed_password = await Hasher.get_hashed_password(user.password)
+        if user.password:
+            user_in_db = UserInDB(
+                **user.dict(exclude={'password'}),
+                hashed_password=hashed_password,
+                created_at=datetime.now()
+            )
+        else:
+            user_in_db = UserInDB(
+                **user.dict(exclude={'password'}),
+                hashed_password=existing_user.hashed_password,
+                created_at=datetime.now()
+            )
 
         await self.user_dao.update_user_in_db(user_in_db)
         return True
@@ -102,3 +101,9 @@ class UserService:
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
         return {"detail": "성공적으로 로그아웃되었습니다."}
+
+    async def modify_subscribe_user(self, current_user: str, follow_user_id: str, subscribe: bool) -> None:
+        await self.user_dao.modify_subscription(follow_user_id, current_user, subscribe)
+
+    async def get_followers(self, user_id: str):
+        return await self.user_dao.get_followers(user_id)

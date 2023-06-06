@@ -1,10 +1,10 @@
 from services.user_service import UserService
 from dao.user_dao import UserDao
-from models.user_models import UserUpdate, UserIn, UserOut
-from models.response_models import LoginResponse, LoginRequest, MessageResponse, DeleteRequest
-from datetime import datetime
+from models.user_models import UserUpdate, UserIn, UserOut, UserInDB
+from models.response_models import LoginResponse, LoginRequest, MessageResponse, FollowsResponse
 from fastapi import APIRouter, HTTPException, Response, Depends, Query, Request
-from utils.session_manager import SessionManager, get_current_session
+from typing import List
+from utils.session_manager import SessionManager, get_current_session, get_current_user
 from utils.permission_manager import check_user_permissions
 from utils.response_manager import common_responses
 from utils.email_manager import send_email
@@ -14,8 +14,18 @@ user_dao = UserDao()
 user_service = UserService(user_dao)
 
 
-@router.post("/", response_model=UserOut, status_code=201, responses=common_responses)
+@router.post("/", status_code=201, responses=common_responses)
 async def create_user(user: UserIn, session_manager: SessionManager = Depends(SessionManager)):
+    existing_user = await user_dao.get_user_by_id(user.user_id)
+    if existing_user:
+        raise HTTPException(
+            status_code=404, detail=f"사용자 아이디 '{user.user_id}'은 사용할 수 없습니다.")
+
+    exiting_email = await user_dao.get_user_by_email(user.email)
+    if exiting_email:
+        raise HTTPException(
+            status_code=404, detail=f"사용자 이메일 '{user.email}'은 사용할 수 없습니다.")
+
     verification_code = session_manager.create_verification_code(user.email)
     verification_link = f"https://localhost:8000/api/verify?code={verification_code}"
 
@@ -27,14 +37,9 @@ async def create_user(user: UserIn, session_manager: SessionManager = Depends(Se
     if "error" in result:
         raise HTTPException(status_code=500, detail="이메일 전송 실패")
 
-    if session_manager.verify_email(verification_code):
-        created_user = await user_service.create_user(user)
-        if not created_user:
-            raise HTTPException(status_code=400, detail="계정을 생성할 수 없습니다.")
-        return {"user_id": user.user_id, "username": user.username, "email": user.email, "birth_date": user.birth_date, "img": user.img, "created_at": datetime.now()}
-    else:
-        raise HTTPException(
-            status_code=400, detail="이메일 인증 코드가 만료되었거나 잘못되었습니다.")
+    session_manager.save_user_info(user)
+
+    return {"message": "인증 이메일이 발송되었습니다. 이메일을 확인해 주세요."}
 
 
 @router.put("/", response_model=UserOut, dependencies=[Depends(get_current_session)], responses=common_responses)
@@ -42,7 +47,7 @@ async def update_user(user: UserUpdate, current_user: str = Depends(get_current_
     check_user_permissions(user.user_id, current_user)
 
     user_in_db = UserUpdate(**user.dict(), hashed_password='')
-    updated = await user_service.update_user(user_in_db, current_user)
+    updated = await user_service.update_user(user_in_db)
     if not updated:
         raise HTTPException(status_code=400, detail="사용자 정보 업데이트에 실패하였습니다.")
     updated_user = await user_dao.get_user_by_id(user.user_id)
@@ -55,9 +60,10 @@ async def update_user(user: UserUpdate, current_user: str = Depends(get_current_
 
 
 @router.delete("/", response_model=MessageResponse, dependencies=[Depends(get_current_session)], responses=common_responses)
-async def delete_user(user: DeleteRequest, current_user: str = Depends(get_current_session)):
+async def delete_user(user: LoginRequest, request: Request, current_user: str = Depends(get_current_session)):
+    session_id = request.cookies.get("session-id")
     check_user_permissions(user.user_id, current_user)
-    result = await user_service.delete_user(user.user_id, user.password, str(user.session_id))
+    result = await user_service.delete_user(user.user_id, user.password, str(session_id))
     if not result:
         raise HTTPException(status_code=400, detail="사용자 탈퇴에 실패하였습니다.")
 
@@ -109,7 +115,6 @@ async def get_users(
         raise HTTPException(status_code=403, detail="권한이 없습니다.")
 
     users = await user_dao.get_users()
-    print(users)
 
     # 페이지네이션 로직
     total_items = len(users)
@@ -124,3 +129,25 @@ async def get_users(
         "total_items": total_items,
         "users": users
     }
+
+
+@router.post("/subscription/{follow_user_id}", dependencies=[Depends(get_current_session)], responses=common_responses)
+async def toggle_subscription(follow_user_id: str, subscribe: bool = True, current_user: str = Depends(get_current_session)):
+    if current_user == follow_user_id:
+        raise HTTPException(status_code=400, detail="본인을 구독 할 수 없습니다.")
+    try:
+        await user_service.modify_subscribe_user(current_user, follow_user_id, subscribe)
+        if subscribe:
+            return {"message": "구독 완료"}
+        else:
+            return {"message": "구독 취소 완료"}
+    except HTTPException as e:
+        if e.status_code == 409:
+            raise HTTPException(status_code=400, detail="이미 구독 중입니다.")
+        else:
+            raise
+
+
+@router.get("/{user_id}/followers", response_model=List[FollowsResponse], responses=common_responses)
+async def get_followers(user_id: str):
+    return await user_service.get_followers(user_id)
