@@ -1,6 +1,6 @@
 from services.user_service import UserService
 from dao.user_dao import UserDao
-from models.user_models import UserUpdate, UserIn, UserOut, UserInDB
+from models.user_models import UserUpdate, UserIn, UserOut
 from models.response_models import LoginResponse, LoginRequest, MessageResponse, FollowsResponse
 from fastapi import APIRouter, HTTPException, Response, Depends, Query, Request
 from typing import List
@@ -12,6 +12,7 @@ from utils.email_manager import send_email
 router = APIRouter()
 user_dao = UserDao()
 user_service = UserService(user_dao)
+session_manager = SessionManager()
 
 
 @router.post("/", status_code=201, responses=common_responses)
@@ -27,7 +28,7 @@ async def create_user(user: UserIn, session_manager: SessionManager = Depends(Se
             status_code=404, detail=f"사용자 이메일 '{user.email}'은 사용할 수 없습니다.")
 
     verification_code = session_manager.create_verification_code(user.email)
-    verification_link = f"https://localhost:8000/api/verify?code={verification_code}"
+    verification_link = f"https://localhost:3000/api/verify?code={verification_code}"
 
     subject = "맛이슈 가입인증 이메일입니다."
     message = f"가입 인증을 완료하려면 다음 링크를 클릭하세요: {verification_link}"
@@ -46,8 +47,12 @@ async def create_user(user: UserIn, session_manager: SessionManager = Depends(Se
 async def update_user(user: UserUpdate, current_user: str = Depends(get_current_session)):
     check_user_permissions(user.user_id, current_user)
 
+    if current_user != "admin" and user.email is not None:
+        if not session_manager.check_verification_code(user.email, user.email_code):
+            raise HTTPException(status_code=400, detail="잘못된 인증 코드입니다.")
+
     user_in_db = UserUpdate(**user.dict(), hashed_password='')
-    updated = await user_service.update_user(user_in_db)
+    updated = await user_service.update_user(user_in_db, current_user)
     if not updated:
         raise HTTPException(status_code=400, detail="사용자 정보 업데이트에 실패하였습니다.")
     updated_user = await user_dao.get_user_by_id(user.user_id)

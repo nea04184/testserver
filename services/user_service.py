@@ -2,10 +2,12 @@ from models.user_models import UserIn, UserInDB
 from utils.hash_manager import Hasher
 from utils.session_manager import SessionManager
 from datetime import datetime
-from dao.user_dao import UserDao
-from fastapi import HTTPException, Response
+from dao.user_dao import UserDao, get_user_dao
+from fastapi import HTTPException, Response, Depends
 from utils.config import get_settings
 from utils.permission_manager import check_user_permissions
+import secrets
+import secrets
 import redis
 
 settings = get_settings()
@@ -107,8 +109,30 @@ class UserService:
 
         return {"detail": "성공적으로 로그아웃되었습니다."}
 
+    async def create_temporary_password(self, user_id: str):
+        temporary_password = secrets.token_hex(8)
+        user = await self.user_dao.get_user_by_id(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=404, detail=f"'{user_id}'를 찾을 수 없습니다.")
+
+        hashed_temporary_password = await Hasher.get_hashed_password(temporary_password)
+        user.hashed_password = hashed_temporary_password
+        user_in_db = UserInDB(
+            **user.dict(),
+            # hashed_password=hashed_temporary_password,
+        )
+        if await self.user_dao.update_user_in_db(user_in_db):
+            return temporary_password
+        else:
+            return None
+
     async def modify_subscribe_user(self, current_user: str, follow_user_id: str, subscribe: bool) -> None:
         await self.user_dao.modify_subscription(follow_user_id, current_user, subscribe)
 
     async def get_followers(self, user_id: str):
         return await self.user_dao.get_followers(user_id)
+
+
+def get_user_service(user_dao: UserDao = Depends(get_user_dao)) -> UserService:
+    return UserService(user_dao)
