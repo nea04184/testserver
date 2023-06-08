@@ -32,6 +32,22 @@ class RecipeDao:
         results = await self.collection.find({"recipe_like": {"$gte": 10}}).to_list(length=None)
         return results
 
+    async def get_recipes_by_latest(self):
+        results = await self.collection.find().sort("created_at", -1).to_list(length=None)
+        return results
+
+    async def get_recipes_by_single_serving(self):
+        results = await self.collection.find({"recipe_info.serving": 1}).to_list(length=None)
+        return results
+
+    async def get_recipes_by_vegetarian(self):
+        results = await self.collection.find({"recipe_category": "vegetarian"}).to_list(length=None)
+        return results
+
+    async def get_recipes_by_ingredients(self, value):
+        results = await self.collection.find({"recipe_ingredients.name": value}).to_list(length=None)
+        return results
+
     async def get_recipe_by_recipe_id(self, id):
         result = await self.collection.find_one({"recipe_id": id})
         if result is None:
@@ -167,13 +183,20 @@ class RecipeDao:
         return updated_comment
 
     async def delete_comment(self, comment_id: str, current_user):
+        print(comment_id)
         existing_comment = await self.comment_collection.find_one({"comment_id": comment_id})
+        if existing_comment is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Comment not found"
+            )
         if existing_comment['comment_author'] != current_user:
             raise HTTPException(
                 status_code=403,
                 detail="You are not authorized to delete this comment"
             )
-        result = await self.collection.delete_one({"comment_id": comment_id})
+        result = await self.comment_collection.delete_one({"comment_id": comment_id})
+        print(result)
         if result.deleted_count == 1:
             return 1  # 문서가 성공적으로 삭제되었을 경우
         else:
