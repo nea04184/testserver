@@ -48,11 +48,12 @@ class RecipeDao:
         results = await self.collection.find({"recipe_ingredients.name": value}).sort("created_at", -1).to_list(length=None)
         return results
 
-    async def get_recipe_by_recipe_id(self, id):
-        result = await self.collection.find_one({"recipe_id": id})
-        if result is None:
-            return None
-        return result
+    async def get_recipe_by_recipe_id(self, recipe_id):
+        recipe = await self.collection.find_one({"recipe_id": recipe_id})
+        user = await self.user_collection.find_one({"user_id": recipe["user_id"]})
+        recipe['user_fan'] = len(user.get('fans', []))
+        recipe['user_subscription'] = len(user.get('subscription', []))
+        return recipe
 
     async def get_recipe_to_update_recipe(self, id):
         result = await self.collection.find_one({"recipe_id": id})
@@ -149,14 +150,19 @@ class RecipeDao:
         result = await self.collection.update_one({"recipe_id": recipe_id}, update_query)
         return result.modified_count
 
-    async def update_recipe_like(self, recipe_id: str):
-        update_query = {"$inc": {"recipe_like": 1}}
-        result = await self.collection.update_one({"recipe_id": recipe_id}, update_query)
-        if result.modified_count > 0:
-            updated_recipe = await self.collection.find_one({"recipe_id": recipe_id})
-            return updated_recipe
+    async def update_recipe_like(self, recipe_id: str, current_user):
+        existing_recipe = await self.collection.find_one({"recipe_id": recipe_id})
+        recipe_like = existing_recipe.get("recipe_like", [])
+        if current_user in recipe_like:
+            recipe_like.remove(current_user)
         else:
-            return None
+            recipe_like.append(current_user)
+        updated_comment = await self.collection.find_one_and_update(
+            {"recipe_id": recipe_id},
+            {"$set": {"recipe_like": recipe_like}},
+            return_document=ReturnDocument.AFTER
+        )
+        return updated_comment
 
     async def get_one_comment(self, comment_id):
         result = await self.comment_collection.find_one({"comment_id": comment_id})
@@ -169,7 +175,6 @@ class RecipeDao:
         comment_parent = recipe_id
         comment_text = comment.comment_text
         comment_profile_img = user["img"]
-
         comment_base = CommentBase(
             comment_author=comment_author,
             comment_text=comment_text,
@@ -177,10 +182,8 @@ class RecipeDao:
             comment_nickname=comment_nickname,
             comment_profile_img=comment_profile_img
         )
-
         await self.comment_collection.insert_one(comment_base.dict())
         inserted_data = await self.comment_collection.find_one({"comment_id": comment_base.comment_id})
-        print('inserted_data: ', inserted_data)
         return inserted_data
 
     async def update_comment(self, comment_id, modified_comment, current_user):
@@ -197,7 +200,6 @@ class RecipeDao:
                 status_code=403,
                 detail="You are not authorized to update this comment"
             )
-        print('modified_comment: ', modified_comment)
         user = await self.user_collection.find_one({"user_id": current_user})
         comment_nickname = user["username"]
         comment_profile_img = user["img"]
@@ -207,13 +209,25 @@ class RecipeDao:
             comment_nickname=comment_nickname,
             comment_profile_img=comment_profile_img
         )
-        print('update_data: ', update_data)
         updated_comment = await self.comment_collection.find_one_and_update(
             {"comment_id": comment_id},
             {"$set": update_data.dict()},
             return_document=ReturnDocument.AFTER
         )
-        print('updated_comment: ', updated_comment)
+        return updated_comment
+
+    async def update_comment_like(self, comment_id, current_user):
+        existing_comment = await self.comment_collection.find_one({"comment_id": comment_id})
+        comment_like = existing_comment.get("comment_like", [])
+        if current_user in comment_like:
+            comment_like.remove(current_user)
+        else:
+            comment_like.append(current_user)
+        updated_comment = await self.comment_collection.find_one_and_update(
+            {"comment_id": comment_id},
+            {"$set": {"comment_like": comment_like}},
+            return_document=ReturnDocument.AFTER
+        )
         return updated_comment
 
     async def delete_comment(self, comment_id: str, current_user):
@@ -229,7 +243,6 @@ class RecipeDao:
                 detail="You are not authorized to delete this comment"
             )
         result = await self.comment_collection.delete_one({"comment_id": comment_id})
-        print('dao', result)
         if result.deleted_count == 1:
             return 1  # 문서가 성공적으로 삭제되었을 경우
         else:

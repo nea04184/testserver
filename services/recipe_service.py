@@ -214,9 +214,9 @@ class RecipeService:
                 detail="Failed to update recipe view"
             )
 
-    async def update_recipe_like(self, recipe_id: str):
+    async def update_recipe_like(self, recipe_id: str, current_user):
         try:
-            result = await self.recipe_dao.update_recipe_like(recipe_id)
+            result = await self.recipe_dao.update_recipe_like(recipe_id, current_user)
             return result
         except Exception as e:
             logger.error(f"Failed to update recipe like: {str(e)}")
@@ -236,6 +236,16 @@ class RecipeService:
                 detail="Failed to update comment"
             )
 
+    async def update_comment_like(self, comment_id, current_user):
+        try:
+            result = await self.recipe_dao.update_comment_like(comment_id, current_user)
+            return result
+        except Exception as e:
+            logger.error(f"service : Failed to update comment: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to update comment"
+            )
      # delete
 
     async def delete_one_recipe(self, recipe_id: str, current_user):

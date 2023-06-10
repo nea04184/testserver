@@ -210,10 +210,10 @@ async def update_recipe(recipe_id: str, updated_recipe: RecipeUpdate, current_us
         )
 
 
-@router.patch("/{recipe_id}/like", status_code=201, tags=["recipes"])
-async def update_like(recipe_id: str):
+@router.patch("/{recipe_id}/like", status_code=201, dependencies=[Depends(get_current_session)], tags=["recipes"])
+async def update_like(recipe_id: str, current_user: str = Depends(get_current_session)):
     try:
-        recipe = await recipe_service.update_recipe_like(recipe_id)
+        recipe = await recipe_service.update_recipe_like(recipe_id, current_user)
         if recipe is None:
             raise HTTPException(
                 status_code=404,
@@ -272,13 +272,25 @@ async def update_comment(comment_id: str, comment: CommentIn, current_user: str 
         if result is None:
             raise HTTPException(
                 status_code=500, detail="Failed to update comment")
-
         serialized_comment = json.loads(json.dumps(result, default=str))
         return JSONResponse(content=serialized_comment, status_code=201)
     except Exception as e:
         raise HTTPException(
             status_code=404, detail=f"Controller:Failed to update comment{str(e)}")
 
+
+@router.patch("/comment/{comment_id}/like", dependencies=[Depends(get_current_session)], tags=["comment"])
+async def update_comment_like(comment_id: str, current_user: str = Depends(get_current_session)) -> CommentUpdate:
+    try:
+        result = await recipe_service.update_comment_like(comment_id, current_user)
+        if result is None:
+            raise HTTPException(
+                status_code=500, detail="Failed to update comment")
+        serialized_comment = json.loads(json.dumps(result, default=str))
+        return JSONResponse(content=serialized_comment, status_code=201)
+    except Exception as e:
+        raise HTTPException(
+            status_code=404, detail=f"Controller:Failed to update comment{str(e)}")
 
 # 페이지네이션
 # @router.get("/")
