@@ -109,7 +109,8 @@ class UserDao:
         await self.update_user_in_db(follow_user)
 
     async def get_people(self, user_id: str, field: str):
-        docs = self.collection.find({field: user_id})
+        query = {field: user_id}
+        docs = self.collection.find(query)
         people = []
         async for doc in docs:
             person = UserInDB(**doc)
