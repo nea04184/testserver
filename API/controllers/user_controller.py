@@ -94,7 +94,7 @@ async def login(user: LoginRequest, response: Response):
             value=result["session_id"],
             secure="None",
             httponly="True",
-            samesite="None",
+            samesite="lax",
         )
         return LoginResponse(message="로그인에 성공했습니다!", session_id=result["session_id"])
     raise HTTPException(status_code=400, detail="로그인에 실패했습니다.")
