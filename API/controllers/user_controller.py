@@ -92,7 +92,7 @@ async def login(user: LoginRequest, response: Response):
         response.set_cookie(
             key="session-id",
             value=result["session_id"],
-            secure="None",
+            secure="True",
             httponly="True",
             samesite="None",
         )
