@@ -19,9 +19,9 @@ class RecipeService:
     def __init__(self, recipe_dao: RecipeDao):
         self.recipe_dao = recipe_dao
 
-    async def get_all_recipes(self):
+    async def get_all_recipes(self,skip: int = 0, limit: int = 160):
         try:
-            result = await self.recipe_dao.get_all_recipes()
+            result = await self.recipe_dao.get_all_recipes(skip=skip, limit=limit)
             return result
         except Exception as e:
             logger.error(f"Failed to get all recipes: {str(e)}")
@@ -30,9 +30,9 @@ class RecipeService:
                 detail="Failed to get all recipes"
             )
 
-    async def get_recipes_by_categories(self, category):
+    async def get_recipes_by_categories(self, category, skip: int = 0, limit: int = 160):
         try:
-            result = await self.recipe_dao.get_recipes_by_categories(category)
+            result = await self.recipe_dao.get_recipes_by_categories(category, skip=skip, limit=limit)
             return result
         except Exception as e:
             logger.error(f"Failed to get recipes by categories: {str(e)}")
@@ -41,9 +41,9 @@ class RecipeService:
                 detail="Failed to get recipes by categories"
             )
 
-    async def get_recipes_by_popularity(self):
+    async def get_recipes_by_popularity(self, skip: int = 0, limit: int = 160):
         try:
-            results = await self.recipe_dao.get_recipes_by_popularity()
+            results = await self.recipe_dao.get_recipes_by_popularity(skip=skip, limit=limit)
             return results
         except Exception as e:
             logger.error(f"Failed to get recipes by popularity: {str(e)}")
@@ -52,9 +52,9 @@ class RecipeService:
                 detail="Failed to get recipes by popularity"
             )
 
-    async def get_recipes_by_latest(self):
+    async def get_recipes_by_latest(self, skip: int = 0, limit: int = 160):
         try:
-            results = await self.recipe_dao.get_recipes_by_latest()
+            results = await self.recipe_dao.get_recipes_by_latest(skip=skip, limit=limit)
             return results
         except Exception as e:
             logger.error(f"Failed to get recipes by latest: {str(e)}")
@@ -62,10 +62,21 @@ class RecipeService:
                 status_code=500,
                 detail="Failed to get recipes by latest"
             )
-
-    async def get_recipes_by_single_serving(self):
+        
+    async def get_recipes_by_user_id(self, user_id, skip: int = 0, limit: int = 160):
         try:
-            results = await self.recipe_dao.get_recipes_by_single_serving()
+            result = await self.recipe_dao.get_recipes_by_user_id(user_id, skip=skip, limit=limit)
+            return result
+        except Exception as e:
+            logger.error(f"Failed to get recipes by user id: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to get recipes by user id"
+            )
+        
+    async def get_recipes_by_single_serving(self, skip: int = 0, limit: int = 160):
+        try:
+            results = await self.recipe_dao.get_recipes_by_single_serving(skip=skip, limit=limit)
             return results
         except Exception as e:
             logger.error(f"Failed to get recipes by single serving: {str(e)}")
@@ -74,9 +85,9 @@ class RecipeService:
                 detail="Failed to get recipes by single serving"
             )
 
-    async def get_recipes_by_vegetarian(self):
+    async def get_recipes_by_vegetarian(self, skip: int = 0, limit: int = 160):
         try:
-            results = await self.recipe_dao.get_recipes_by_vegetarian()
+            results = await self.recipe_dao.get_recipes_by_vegetarian(skip=skip, limit=limit)
             return results
         except Exception as e:
             logger.error(f"Failed to get recipes by vegetarian: {str(e)}")
@@ -107,16 +118,7 @@ class RecipeService:
                 detail="Failed to get recipe by recipe id"
             )
 
-    async def get_recipes_by_user_id(self, user_id):
-        try:
-            result = await self.recipe_dao.get_recipes_by_user_id(user_id)
-            return result
-        except Exception as e:
-            logger.error(f"Failed to get recipes by user id: {str(e)}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to get recipes by user id"
-            )
+
 
     async def get_recipe_to_update_recipe(self, recipe_id):
         try:

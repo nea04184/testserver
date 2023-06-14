@@ -21,9 +21,13 @@ collection = db_manager.get_collection("recipes")
 
 
 @router.get("/", response_model=RecipeGetList, tags=["recipes_get"])
-async def get_all_recipes():
+async def get_all_recipes(    
+    page: int = 1,
+    limit: int = 160
+):
     try:
-        recipes = await recipe_service.get_all_recipes()
+        skip_count = (page - 1) * limit
+        recipes = await recipe_service.get_all_recipes(skip=skip_count, limit=limit)
         serialized_recipes = json.loads(json.dumps(recipes, default=str))
         if len(recipes) == 0:
             return JSONResponse(content=[])
@@ -33,9 +37,14 @@ async def get_all_recipes():
 
 
 @router.get("/categories", response_model=RecipeGetList, tags=["recipes_get"])
-async def get_recipes_by_categories(value: str = Query(...)):
+async def get_recipes_by_categories(
+    value: str = Query(...),
+    page: int = 1,
+    limit: int = 160
+):
     try:
-        recipes = await recipe_service.get_recipes_by_categories(value)
+        skip_count = (page - 1) * limit
+        recipes = await recipe_service.get_recipes_by_categories(value, skip=skip_count, limit=limit)
         serialized_recipes = json.loads(json.dumps(recipes, default=str))
         if len(recipes) == 0:
             return JSONResponse(content=[])
@@ -45,7 +54,7 @@ async def get_recipes_by_categories(value: str = Query(...)):
 
 
 @router.get("/search", response_model=RecipeGetList, tags=["recipes_get"])
-async def search_recipes_by_title(value: str):
+async def search_recipes_by_title(value: str, page: int = 1, limit: int = 160):
     pipeline = [
         {"$match": {
             "$or": [
@@ -55,7 +64,9 @@ async def search_recipes_by_title(value: str):
                 {"recipe_info": {"$regex": value, "$options": "i"}},
                 {"recipe_ingredients.name": {"$regex": value, "$options": "i"}}
             ]
-        }}
+        }},
+        {"$skip": (page - 1) * limit},
+        {"$limit": limit}
     ]
     result_cursor = collection.aggregate(pipeline)
     result = []
@@ -70,8 +81,12 @@ async def search_recipes_by_title(value: str):
 
 
 @router.get("/user", dependencies=[Depends(get_current_session)], response_model=RecipeGetList, tags=["recipes_get"])
-async def get_recipes_by_user_id(current_user: str = Depends(get_current_session)):
-    recipes = await recipe_service.get_recipes_by_user_id(current_user)
+async def get_recipes_by_user_id(
+    current_user: str = Depends(get_current_session), 
+    page: int = 1,
+    limit: int = 150):
+    skip_count = (page - 1) * limit
+    recipes = await recipe_service.get_recipes_by_user_id(current_user,skip=skip_count, limit=limit)
     if len(recipes) == 0:
         return JSONResponse(content=[])
     if recipes:
@@ -82,9 +97,12 @@ async def get_recipes_by_user_id(current_user: str = Depends(get_current_session
 
 
 @router.get("/popularity", response_model=RecipeGetList, tags=["recipes_get"])
-async def get_recipes_by_popularity():
+async def get_recipes_by_popularity(    
+    page: int = 1,
+    limit: int = 160):
     try:
-        recipes = await recipe_service.get_recipes_by_popularity()
+        skip_count = (page - 1) * limit
+        recipes = await recipe_service.get_recipes_by_popularity(skip=skip_count, limit=limit)
         serialized_recipes = json.loads(json.dumps(recipes, default=str))
         if len(recipes) == 0:
             return JSONResponse(content=[])
@@ -92,25 +110,31 @@ async def get_recipes_by_popularity():
     except Exception as e:
         raise HTTPException(
             status_code=404, detail=str(e))
-
-
+    
 @router.get("/latest", response_model=RecipeGetList, tags=["recipes_get"])
-async def get_recipes_by_latest():
+async def get_recipes_by_latest(
+    page: int = 1,
+    limit: int = 160
+):
     try:
-        recipes = await recipe_service.get_recipes_by_latest()
+        skip_count = (page - 1) * limit
+        recipes = await recipe_service.get_recipes_by_latest(skip=skip_count, limit=limit)
         serialized_recipes = json.loads(json.dumps(recipes, default=str))
         if len(recipes) == 0:
             return JSONResponse(content=[])
         return JSONResponse(content=serialized_recipes)
     except Exception as e:
-        raise HTTPException(
-            status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/single", response_model=RecipeGetList, tags=["recipes_get"])
-async def get_recipes_by_single_serving():
+async def get_recipes_by_single_serving(    
+    page: int = 1,
+    limit: int = 160
+    ):
     try:
-        recipes = await recipe_service.get_recipes_by_single_serving()
+        skip_count = (page - 1) * limit
+        recipes = await recipe_service.get_recipes_by_single_serving(skip=skip_count, limit=limit)
         serialized_recipes = json.loads(json.dumps(recipes, default=str))
         if len(recipes) == 0:
             return JSONResponse(content=[])
@@ -121,9 +145,13 @@ async def get_recipes_by_single_serving():
 
 
 @router.get("/vegetarian", response_model=RecipeGetList, tags=["recipes_get"])
-async def get_recipes_by_vegetarian():
+async def get_recipes_by_vegetarian(
+    page: int = 1,
+    limit: int = 160
+    ):
     try:
-        recipes = await recipe_service.get_recipes_by_vegetarian()
+        skip_count = (page - 1) * limit
+        recipes = await recipe_service.get_recipes_by_vegetarian(skip=skip_count, limit=limit)
         serialized_recipes = json.loads(json.dumps(recipes, default=str))
         if len(recipes) == 0:
             return JSONResponse(content=[])

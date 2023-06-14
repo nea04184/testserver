@@ -19,16 +19,16 @@ class RecipeDao:
 
     # get
 
-    async def get_all_recipes(self):
-        cursor = self.collection.find({}).sort("created_at", -1)
+    async def get_all_recipes(self, skip: int = 0, limit: int = 160):
+        cursor = self.collection.find({}).sort("created_at", -1).skip(skip).limit(limit)
         result = await cursor.to_list(length=None)
         return result
 
-    async def get_recipes_by_categories(self, category):
-        result = await self.collection.find({"recipe_category": category}).sort("created_at", -1).to_list(length=None)
+    async def get_recipes_by_categories(self, category, skip: int = 0, limit: int = 160):
+        result = await self.collection.find({"recipe_category": category}).sort("created_at", -1).skip(skip).limit(limit).to_list(length=None)
         return result
 
-    async def get_recipes_by_popularity(self):
+    async def get_recipes_by_popularity(self, skip: int = 0, limit: int = 160):
         pipeline = [
             {
                 "$addFields": {
@@ -44,19 +44,27 @@ class RecipeDao:
                 }
             }
         ]
-        results = await self.collection.aggregate(pipeline).to_list(length=None)
+        cursor = self.collection.aggregate(pipeline)
+        results = await cursor.to_list(length=None)
+        results = results[skip:skip+limit]  # 페이지네이션을 위해 결과를 잘라냄
         return results
 
-    async def get_recipes_by_latest(self):
-        results = await self.collection.find().sort("created_at", -1).to_list(length=None)
+    async def get_recipes_by_latest(self, skip: int = 0, limit: int = 160):
+        results = await self.collection.find().sort("created_at", -1).skip(skip).limit(limit).to_list(length=None)
+        return results
+    
+    async def get_recipes_by_user_id(self, user_id, skip: int = 0, limit: int = 160):
+        result = await self.collection.find(
+            {"user_id": user_id}
+        ).sort("created_at", -1).skip(skip).limit(limit).to_list(length=None)
+        return result
+    
+    async def get_recipes_by_single_serving(self, skip: int = 0, limit: int = 160):
+        results = await self.collection.find({"recipe_info.serving": 1}).sort("created_at", -1).skip(skip).limit(limit).to_list(length=None)
         return results
 
-    async def get_recipes_by_single_serving(self):
-        results = await self.collection.find({"recipe_info.serving": 1}).sort("created_at", -1).to_list(length=None)
-        return results
-
-    async def get_recipes_by_vegetarian(self):
-        results = await self.collection.find({"recipe_category": "vegetarian"}).sort("created_at", -1).to_list(length=None)
+    async def get_recipes_by_vegetarian(self, skip: int = 0, limit: int = 160):
+        results = await self.collection.find({"recipe_category": "vegetarian"}).sort("created_at", -1).skip(skip).limit(limit).to_list(length=None)
         return results
 
     async def get_recipes_by_ingredients(self, value):
@@ -83,12 +91,6 @@ class RecipeDao:
         if result is None:
             return None
         return RecipeCreate(**result)
-
-    async def get_recipes_by_user_id(self, user_id):
-        result = await self.collection.find(
-            {"user_id": user_id}
-        ).sort("created_at", -1).to_list(length=None)
-        return result
 
     async def get_comments(self, recipe_id):
         result = await self.comment_collection.find({"comment_parent": recipe_id}).to_list(length=None)
