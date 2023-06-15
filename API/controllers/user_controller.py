@@ -228,7 +228,7 @@ async def get_subscriptions(user_id: str):
 
 
 @router.get(
-    "/writer",
+    "/{user_id}",
     responses=common_responses,
 )
 async def get_writer(user_id: str):
@@ -240,4 +240,6 @@ async def get_writer(user_id: str):
         "user_id": user_in_db.user_id,
         "username": user_in_db.username,
         "img": user_in_db.img,
+        "fans": user_in_db.fans,
+        "subscriptions": user_in_db.subscriptions,
     }
