@@ -229,7 +229,6 @@ async def get_subscriptions(user_id: str):
 
 @router.get(
     "/writer",
-    response_model=UserOut,
     responses=common_responses,
 )
 async def get_writer(user_id: str):
