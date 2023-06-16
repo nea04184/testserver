@@ -121,14 +121,14 @@ async def logout(request: Request, response: Response):
 
 @router.get(
     "/me",
-    response_model=UserOut,
     dependencies=[Depends(get_current_session)],
     responses=common_responses,
 )
 async def get_user(current_user: str = Depends(get_current_session)):
     user_in_db = await user_dao.get_user_by_id(current_user)
+    print(current_user)
     if not user_in_db:
-        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다!")
 
     return {
         "user_id": user_in_db.user_id,
@@ -137,6 +137,8 @@ async def get_user(current_user: str = Depends(get_current_session)):
         "birth_date": user_in_db.birth_date,
         "img": user_in_db.img,
         "created_at": user_in_db.created_at,
+        "fans": user_in_db.fans,
+        "subscriptions": user_in_db.subscriptions,
     }
 
 
@@ -228,6 +230,7 @@ async def get_subscriptions(user_id: str):
 )
 async def get_chef(user_id: str):
     user_in_db = await user_dao.get_user_by_id(user_id)
+    print(user_id)
     if not user_in_db:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
 
