@@ -2,6 +2,7 @@ from utils.config import get_settings
 from utils.db_manager import MongoDBManager
 from models.user_models import UserInDB
 from fastapi import HTTPException
+from typing import List
 
 settings = get_settings()
 
@@ -120,11 +121,10 @@ class UserDao:
         )
         await self.update_user_in_db(follow_user_id, {"fans": follow_user.fans})
 
-    async def get_people(self, user_id: str, field: str):
-        query = {field: user_id}
-        docs = self.collection.find(query)
+    async def get_user_details(self, user_ids: List[str]):
+        cursor = self.collection.find({"user_id": {"$in": user_ids}})
         people = []
-        async for doc in docs:
+        async for doc in cursor:
             person = UserInDB(**doc)
             people.append(
                 {
@@ -136,10 +136,16 @@ class UserDao:
         return people
 
     async def get_fans(self, user_id: str):
-        return await self.get_people(str(user_id), "subscriptions")
+        doc = await self.collection.find_one({"user_id": user_id})
+        if doc and "fans" in doc:
+            return await self.get_user_details(doc["fans"])
+        return []
 
     async def get_subscriptions(self, user_id: str):
-        return await self.get_people(str(user_id), "fans")
+        doc = await self.collection.find_one({"user_id": user_id})
+        if doc and "subscriptions" in doc:
+            return await self.get_user_details(doc["subscriptions"])
+        return []
 
     async def is_user_subscribed(self, current_user: str, follow_user_id: str) -> bool:
         user = await self.get_user_by_id(current_user)
